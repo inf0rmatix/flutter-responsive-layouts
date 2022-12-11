@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:responsive_layout_example/widgets/debug_grid_overlay.dart';
 
 class AddressFormWithFlexAdvanced extends StatelessWidget {
   final bool isSmall;
@@ -77,27 +78,57 @@ class AddressFormWithFlexAdvanced extends StatelessWidget {
               ),
             ],
           ),
-          Flex(
-            direction: isSmall ? Axis.vertical : Axis.horizontal,
-            children: [
-              Expanded(
-                flex: isSmall ? 0 : 3,
-                child: TextFormField(
-                  decoration: const InputDecoration(
-                    label: Text('Zip'),
+          DebugGridOverlay(
+            isGridVisible: true,
+            hasOuterColumnSpacing: false,
+            color: Colors.blue,
+            alpha: 50,
+            child: Flex(
+              direction: isSmall ? Axis.vertical : Axis.horizontal,
+              children: [
+                Expanded(
+                  flex: isSmall ? 0 : 3,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return Container(
+                        height: 100,
+                        decoration: BoxDecoration(
+                          color: Colors.grey,
+                          border: Border.all(color: Colors.black),
+                        ),
+                        child: Align(
+                          alignment: Alignment.topCenter,
+                          child: Text(
+                            constraints.biggest.width.toStringAsFixed(0),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
-              ),
-              const SizedBox.square(dimension: 16),
-              Expanded(
-                flex: isSmall ? 0 : 9,
-                child: TextFormField(
-                  decoration: const InputDecoration(
-                    label: Text('City'),
+                // const SizedBox.square(dimension: 16),
+                Expanded(
+                  flex: isSmall ? 0 : 9,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return Container(
+                        height: 100,
+                        decoration: BoxDecoration(
+                          color: Colors.grey,
+                          border: Border.all(color: Colors.black),
+                        ),
+                        child: Align(
+                          alignment: Alignment.topCenter,
+                          child: Text(
+                            constraints.biggest.width.toStringAsFixed(0),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           Flex(
             direction: isSmall ? Axis.vertical : Axis.horizontal,
