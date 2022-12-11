@@ -1,3 +1,4 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flutter/material.dart';
 
 void main() => runApp(const ExampleApp());
@@ -8,13 +9,8 @@ class ExampleApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Directionality(
-        // TRY THIS: Try changing the direction here and hot-reloading to
-        // see the layout change.
-        textDirection: TextDirection.ltr,
-        child: Scaffold(
-          body: ExampleWidget(),
-        ),
+      home: Scaffold(
+        body: ExampleWidget(),
       ),
     );
   }
@@ -27,38 +23,14 @@ class ExampleWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final children = <GridChild>[
-      for (var color in _colors)
-        GridChild(
-          id: color,
-          child: Container(
-            color: color,
-            alignment: Alignment.center,
-            child: Text(color.toString()),
-          ),
-        ),
-    ];
-
-    return CustomMultiChildLayout(
-      delegate: GridDelegate(
-        columns: 12,
-        spacing: 8,
-        outerSpacing: 16,
-        children: children,
-      ),
-      children: <Widget>[
-        // Create all of the colored boxes in the colors map.
-        for (var color in _colors)
-          // The "id" can be any Object, not just a String.
-          LayoutId(
-            id: color,
-            child: Container(
-              color: color,
-              alignment: Alignment.center,
-              child: Text(color.toString()),
-            ),
-          ),
-      ],
+    return CustomGridLayout(
+      elements: _colors
+          .map((color) => GridElement(
+                child: Container(
+                  color: color,
+                ),
+              ))
+          .toList(),
     );
   }
 }
@@ -68,14 +40,16 @@ class GridDelegate extends MultiChildLayoutDelegate {
   final double spacing;
   final double outerSpacing;
 
-  final List<GridChild> children;
+  final List<GridElementInfo> elements;
 
   GridDelegate({
     required this.columns,
     required this.spacing,
     required this.outerSpacing,
-    required this.children,
-  });
+    required this.elements,
+  }) {
+    sanityCheck();
+  }
 
   @override
   void performLayout(Size size) {
@@ -89,23 +63,29 @@ class GridDelegate extends MultiChildLayoutDelegate {
 
     var childPosition = Offset(outerSpacing, 0);
 
-    for (var child in children) {
+    for (var element in elements) {
+      final width = element.columnSpan * columnWidth + (element.columnSpan - 1) * spacing;
+
+      final id = element.id;
+
+      if (id == null) {
+        throw Exception("The id of a GridElementInfo can't be null.");
+      }
+
       // layoutChild must be called exactly once for each child.
-
-      final width = child.columnSpan * columnWidth + (child.columnSpan - 1) * spacing;
-
       final Size childSize = layoutChild(
-        child.id,
+        id,
         BoxConstraints(
           maxHeight: size.height,
-          maxWidth: child.columnSpan * columnWidth + (child.columnSpan - 1) * spacing,
+          maxWidth: width,
         ),
       );
 
       // positionChild must be called to change the position of a child from
       // what it was in the previous layout. Each child starts at (0, 0) for the
       // first layout.
-      positionChild(child.id, childPosition);
+      positionChild(id, childPosition);
+
       childPosition += Offset(childSize.width + spacing, 0);
     }
   }
@@ -114,16 +94,124 @@ class GridDelegate extends MultiChildLayoutDelegate {
   bool shouldRelayout(covariant MultiChildLayoutDelegate oldDelegate) {
     return false;
   }
+
+  void sanityCheck() {
+    final columnsFilled =
+        elements.map((element) => element.columnSpan).reduce((value, columnSpan) => value += columnSpan);
+
+    if (columnsFilled > columns) {
+      throw Exception("The sum of the column spans of all elements can't be greater than the number of columns.");
+    }
+  }
 }
 
-class GridChild {
-  final Object id;
+class GridElement {
+  final GridElementInfo data;
   final Widget child;
-  final int columnSpan;
 
-  GridChild({
-    required this.id,
+  GridElement({
+    this.data = const GridElementInfo(),
     required this.child,
+  });
+}
+
+class GridElementInfo {
+  final int columnSpan;
+  final Object? id;
+
+  const GridElementInfo({
+    this.id,
     this.columnSpan = 1,
   });
+
+  GridElementInfo copyWith({
+    int? columnSpan,
+    Object? id,
+  }) {
+    return GridElementInfo(
+      columnSpan: columnSpan ?? this.columnSpan,
+      id: id ?? this.id,
+    );
+  }
+}
+
+class CustomGridLayout extends StatefulWidget {
+  final int columns;
+
+  final double? spacing;
+
+  final double? outerSpacing;
+
+  final List<GridElement> elements;
+
+  const CustomGridLayout({
+    required this.elements,
+    this.columns = 12,
+    this.spacing,
+    this.outerSpacing,
+    super.key,
+  });
+
+  @override
+  State<CustomGridLayout> createState() => _CustomGridLayoutState();
+}
+
+class _CustomGridLayoutState extends State<CustomGridLayout> {
+  final List<Widget> _children = [];
+
+  final List<GridElementInfo> _elements = [];
+
+  @override
+  void initState() {
+    super.initState();
+
+    _setupChildrenAndData();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    _setupChildrenAndData();
+  }
+
+  @override
+  void didUpdateWidget(covariant CustomGridLayout oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    _setupChildrenAndData();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomMultiChildLayout(
+      delegate: GridDelegate(
+        columns: widget.columns,
+        spacing: widget.spacing ?? 0,
+        outerSpacing: widget.outerSpacing ?? 0,
+        elements: _elements,
+      ),
+      children: _children,
+    );
+  }
+
+  void _setupChildrenAndData() {
+    _children.clear();
+    _elements.clear();
+
+    for (var element in widget.elements) {
+      final id = element.data.id ?? element.child.key ?? widget.elements.indexOf(element);
+
+      final data = element.data.copyWith(id: id);
+
+      _elements.add(data);
+
+      _children.add(
+        LayoutId(
+          id: id,
+          child: element.child,
+        ),
+      );
+    }
+  }
 }
