@@ -23,14 +23,77 @@ class ExampleWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomGridLayout(
-      elements: _colors
-          .map((color) => GridElement(
+    return Column(
+      children: [
+        Expanded(
+          child: CustomGridLayout(
+            elements: _colors
+                .map((color) => GridElement(
+                      child: Container(
+                        color: color,
+                      ),
+                    ))
+                .toList(),
+          ),
+        ),
+        Expanded(
+          child: CustomGridLayout(
+            elements: _colors.reversed
+                .toList()
+                .sublist(0, 6)
+                .map((color) => GridElement(
+                      data: const GridElementInfo(columnSpan: 2),
+                      child: Container(
+                        color: color,
+                      ),
+                    ))
+                .toList(),
+          ),
+        ),
+        Expanded(
+          child: CustomGridLayout(
+            elements: _colors
+                .sublist(0, 3)
+                .map((color) => GridElement(
+                      data: const GridElementInfo(columnSpan: 4),
+                      child: Container(
+                        color: color,
+                      ),
+                    ))
+                .toList(),
+          ),
+        ),
+        Expanded(
+          child: CustomGridLayout(
+            elements: [
+              GridElement(
+                data: const GridElementInfo(columnSpan: 12),
                 child: Container(
-                  color: color,
+                  color: _colors.last,
                 ),
-              ))
-          .toList(),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: CustomGridLayout(
+            elements: [
+              GridElement(
+                data: const GridElementInfo(columnSpan: 7),
+                child: Container(
+                  color: _colors.first,
+                ),
+              ),
+              GridElement(
+                data: const GridElementInfo(columnSpan: 5),
+                child: Container(
+                  color: _colors[1],
+                ),
+              )
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -59,12 +122,20 @@ class GridDelegate extends MultiChildLayoutDelegate {
 
     final spaceAvailable = size.width - spacerWidth;
 
+    debugPrint("");
+
+    debugPrint("size.width: ${size.width}");
+
+    debugPrint("spaceAvailable: $spaceAvailable");
+
     final double columnWidth = spaceAvailable / columns;
 
     var childPosition = Offset(outerSpacing, 0);
 
     for (var element in elements) {
       final width = element.columnSpan * columnWidth + (element.columnSpan - 1) * spacing;
+
+      debugPrint("width: $width");
 
       final id = element.id;
 
